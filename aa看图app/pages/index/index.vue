@@ -84,10 +84,11 @@
 			<scroll-view
 			v-if="mangaFolders.length > 0"
 			class="folder-list"
+			:class="{ 'folder-list-scrolling': isLibraryScrolling }"
 			scroll-y
 			refresher-enabled
 			:refresher-triggered="isRefreshing"
-			refresher-background="#141210"
+			refresher-background="#0C0D10"
 			:scroll-top="libraryScrollTopBinding"
 			@refresherrefresh="onLibraryPullRefresh"
 			@scroll="onLibraryScroll"
@@ -458,6 +459,10 @@ const libraryScrollTopBinding = ref(0)
 const showPageJumpModal = ref(false)
 /** 长按漫画弹出的居中操作弹窗（重命名 / 删除） */
 const showMangaActionSheet = ref(false)
+/** 玻璃性能护栏：列表滚动中为 true，卡片临时退回纯色（backdrop-filter
+ *  逐帧重栅化是 WebView 滚动掉帧主因），停止 200ms 后恢复玻璃 */
+const isLibraryScrolling = ref(false)
+let _glassGuardTimer = null
 const mangaActionFolder = ref(null)
 /** 阅读器顶部按钮（退出 / 横竖切换）：点击屏幕上 1/4 区域切换显示 */
 const showTopControls = ref(false)
@@ -852,6 +857,13 @@ function onLibraryScroll(e) {
 		clearTimeout(longPressTimer)
 		longPressTimer = null
 	}
+	// 玻璃护栏：滚动开始切纯色卡片，停止 200ms 后恢复玻璃
+	if (!isLibraryScrolling.value) isLibraryScrolling.value = true
+	if (_glassGuardTimer) clearTimeout(_glassGuardTimer)
+	_glassGuardTimer = setTimeout(() => {
+		_glassGuardTimer = null
+		isLibraryScrolling.value = false
+	}, 200)
 }
 
 function getSectionLetter(name) {
@@ -3975,30 +3987,43 @@ function finishSwiperReset() {
 
 <style scoped>
 /* ════════════════════════════════════════════════════════════════
- * Warm Dark Editorial — 暖色编辑式书架美学
- * 设计方向：独立书店的灯光温度 + 杂志排版的层级节奏
- * 品牌：陶土橘 #D97757 作为「盐」而非「酱」，克制点缀
- * 字体：标题用衬线体（Noto Serif CJK SC）传达编辑式气质
+ * Cool Liquid Glass — iOS 冷色液态玻璃美学
+ * 设计方向：iOS 26 液态玻璃 × 冷蓝黑夜色；玻璃只上「悬浮控件层」，
+ * 内容层（列表文字、阅读页）保持纯色（官方材质规则）
+ * 品牌：iOS systemBlue #0A84FF 作为强调色，克制点缀
+ * 玻璃近似：blur + saturate + 白膜 + 内描边；
+ * 折射/透镜（feDisplacementMap）不做 — Android WebView 有 alpha
+ * 预乘陷阱且逐帧重采样掉帧，用「白膜+描边+高光」近似玻璃质感
  * 阅读器图片区域保持纯黑以保证最大对比度
  * ════════════════════════════════════════════════════════════════ */
 .reader-page {
-	/* ── 色彩 Tonal Surface 层级（暖棕底调）── */
-	--surface-0: #141210;
-	--surface-1: #1C1A17;
-	--surface-2: #252320;
-	--surface-3: #2E2C28;
-	--surface-4: #383530;
-	/* ── 品牌色阶 ── */
-	--brand: #D97757;
-	--brand-light: #E8A98F;
-	--brand-dark: #C96442;
-	--brand-deep: #3A2A22;
-	/* ── 文字 ── */
-	--text-primary: #FAF9F5;
-	--text-secondary: #B7B5A9;
-	--text-weak: #6E6D68;
-	--text-disabled: #46443B;
-	--icon-neutral: #908E84;
+	/* ── 色彩 Tonal Surface 层级（冷蓝底调）── */
+	--surface-0: #0C0D10;
+	--surface-1: #15161A;
+	--surface-2: #1D1F24;
+	--surface-3: #26282E;
+	--surface-4: #303239;
+	/* ── 品牌色阶（iOS systemBlue 深色模式）── */
+	--brand: #0A84FF;
+	--brand-light: #64A8FF;
+	--brand-dark: #0A6FD6;
+	--brand-deep: rgba(10, 132, 255, 0.18);
+	/* ── 文字（iOS label 体系）── */
+	--text-primary: #F5F5F7;
+	--text-secondary: #98989F;
+	--text-weak: #666670;
+	--text-disabled: #48484E;
+	--icon-neutral: #8E8E93;
+	/* ── 液态玻璃令牌（Liquid Glass 近似）── */
+	--glass-blur-s: 8px;   /* 列表卡片（轻） */
+	--glass-blur-m: 12px;  /* 搜索框 / Chip / 小控件 */
+	--glass-blur-l: 18px;  /* 弹窗大面板 */
+	--glass-bg: rgba(255, 255, 255, 0.08);
+	--glass-bg-strong: rgba(255, 255, 255, 0.12);
+	--glass-bg-clear: rgba(255, 255, 255, 0.05);
+	--glass-border: rgba(255, 255, 255, 0.14);
+	--glass-highlight: rgba(255, 255, 255, 0.10);
+	--glass-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.25);
 	/* ── 功能色 ── */
 	--info-blue: #64A0FF;
 	--success: #8CA06F;
@@ -4080,7 +4105,7 @@ function finishSwiperReset() {
 	background-color: var(--brand);
 	border: none;
 	border-radius: 999rpx;
-	box-shadow: 0 8rpx 32rpx rgba(217, 119, 87, 0.30);
+	box-shadow: 0 8rpx 32rpx rgba(10, 132, 255, 0.30);
 }
 
 /* 书库列表 */
@@ -4092,7 +4117,7 @@ function finishSwiperReset() {
 	padding: 80rpx 32rpx 40rpx;
 	box-sizing: border-box;
 	background:
-		radial-gradient(ellipse 90% 40% at 50% 0%, rgba(217, 119, 87, 0.035) 0%, transparent 70%),
+		radial-gradient(ellipse 90% 40% at 50% 0%, rgba(10, 132, 255, 0.045) 0%, transparent 70%),
 		var(--surface-0);
 }
 
@@ -4126,7 +4151,7 @@ function finishSwiperReset() {
 .library-header-line {
 	flex: 1;
 	height: 1rpx;
-	background: linear-gradient(90deg, rgba(217, 119, 87, 0.5) 0%, rgba(217, 119, 87, 0.08) 50%, transparent 100%);
+	background: linear-gradient(90deg, rgba(10, 132, 255, 0.5) 0%, rgba(10, 132, 255, 0.08) 50%, transparent 100%);
 	margin-left: 16rpx;
 }
 
@@ -4140,17 +4165,21 @@ function finishSwiperReset() {
 	min-height: 88rpx;
 	display: flex;
 	align-items: center;
-	/* 同 .back-btn：去掉 backdrop-filter，改纯色 + 独立合成层 */
-	background-color: rgba(28, 26, 23, 0.94);
-	border: 1rpx solid rgba(250, 249, 245, 0.10);
+	/* 液态玻璃 clear 变体：轻白膜 + 模糊（默认显示时阅读页静止，开销可控；
+	   真机验证若翻页卡顿则回退纯色 rgba(28,29,34,0.94)） */
+	background-color: var(--glass-bg-clear);
+	border: 1rpx solid var(--glass-border);
 	border-radius: 999rpx;
+	-webkit-backdrop-filter: blur(14px) saturate(150%);
+	backdrop-filter: blur(14px) saturate(150%);
+	box-shadow: 0 4rpx 18rpx rgba(0, 0, 0, 0.35), inset 0 1rpx 0 var(--glass-highlight);
 	transform: translateZ(0);
 	transition: transform 120ms ease-out, background-color 120ms ease-out;
 }
 
 .reader-mode-toggle:active {
 	transform: scale(0.94);
-	background-color: rgba(46, 44, 40, 0.92);
+	background-color: var(--glass-bg);
 }
 
 .reader-mode-toggle-text {
@@ -4176,7 +4205,7 @@ function finishSwiperReset() {
 	width: 30rpx;
 	height: 30rpx;
 	transform: translateY(-50%);
-	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236E6D68' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M16.5 16.5L21 21'/></svg>");
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666670' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M16.5 16.5L21 21'/></svg>");
 	background-size: contain;
 	background-repeat: no-repeat;
 	background-position: center;
@@ -4187,16 +4216,27 @@ function finishSwiperReset() {
 	width: 100%;
 	height: 88rpx;
 	padding: 0 28rpx 0 72rpx;
-	background-color: var(--surface-3);
+	/* 降级底色：无 backdrop-filter 时保持可读的半透明面 */
+	background-color: rgba(255, 255, 255, 0.10);
+	border: 1rpx solid var(--glass-border);
 	border-radius: var(--radius-md);
 	color: var(--text-primary);
 	font-size: 28rpx;
 	box-sizing: border-box;
-	box-shadow: inset 0 2rpx 6rpx rgba(0, 0, 0, 0.22);
+}
+
+/* 液态玻璃：搜索槽（悬浮控件层） */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+	.library-search-input {
+		background-color: var(--glass-bg);
+		-webkit-backdrop-filter: blur(var(--glass-blur-m)) saturate(160%);
+		backdrop-filter: blur(var(--glass-blur-m)) saturate(160%);
+		box-shadow: inset 0 1rpx 0 var(--glass-highlight);
+	}
 }
 
 .search-placeholder {
-	color: #6E6D68;
+	color: #666670;
 }
 
 .library-filter-scroll {
@@ -4212,14 +4252,33 @@ function finishSwiperReset() {
 	padding: 12rpx 32rpx;
 	margin-right: 16rpx;
 	border-radius: 999rpx;
-	background-color: var(--surface-2);
+	/* 降级底色 */
+	background-color: rgba(255, 255, 255, 0.07);
+	border: 1rpx solid rgba(255, 255, 255, 0.10);
 	transition: all 180ms ease-out;
 }
 
+/* 液态玻璃：筛选 Chip（悬浮控件层） */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+	.library-filter-chip {
+		background-color: rgba(255, 255, 255, 0.07);
+		-webkit-backdrop-filter: blur(var(--glass-blur-m)) saturate(150%);
+		backdrop-filter: blur(var(--glass-blur-m)) saturate(150%);
+	}
+}
+
 .library-filter-active {
-	color: var(--brand);
+	color: var(--brand-light);
 	background-color: var(--brand-deep);
+	border-color: rgba(10, 132, 255, 0.45);
 	font-weight: 600;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+	.library-filter-active {
+		-webkit-backdrop-filter: blur(var(--glass-blur-m)) saturate(180%);
+		backdrop-filter: blur(var(--glass-blur-m)) saturate(180%);
+	}
 }
 
 .library-section-header {
@@ -4282,13 +4341,25 @@ function finishSwiperReset() {
 .page-jump-panel {
 	width: 560rpx;
 	padding: 48rpx 36rpx 32rpx;
-	background-color: var(--surface-1);
+	/* 降级底色：无 backdrop-filter 时的高不透明冷色面板 */
+	background-color: rgba(28, 29, 34, 0.92);
+	border: 1rpx solid var(--glass-border);
 	border-radius: var(--radius-lg);
 	/* 阴影模糊半径从 80rpx 降到 48rpx：栅化区域减少约 64%，
 	   视觉差异在暗背景 + 0.6 黑遮罩下几乎不可见 */
 	box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.5);
 	will-change: transform, opacity;
 	animation: panel-pop 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 液态玻璃：页码跳转弹窗（大面板 blur 18px） */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+	.page-jump-panel {
+		background-color: var(--glass-bg-strong);
+		-webkit-backdrop-filter: blur(var(--glass-blur-l)) saturate(160%);
+		backdrop-filter: blur(var(--glass-blur-l)) saturate(160%);
+		box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.5), inset 0 1rpx 0 var(--glass-highlight);
+	}
 }
 
 .page-jump-title {
@@ -4303,7 +4374,9 @@ function finishSwiperReset() {
 	width: 100%;
 	height: 88rpx;
 	padding: 0 24rpx;
-	background-color: var(--surface-3);
+	/* 玻璃面板内的输入槽：半透明白，与面板自然融合 */
+	background-color: rgba(255, 255, 255, 0.10);
+	border: 1rpx solid rgba(255, 255, 255, 0.10);
 	border-radius: var(--radius-md);
 	color: var(--text-primary);
 	font-size: 32rpx;
@@ -4368,13 +4441,25 @@ function finishSwiperReset() {
 .manga-action-panel {
 	width: 560rpx;
 	padding: 32rpx 0 0;
-	background-color: var(--surface-1);
+	/* 降级底色：无 backdrop-filter 时的高不透明冷色面板 */
+	background-color: rgba(28, 29, 34, 0.92);
+	border: 1rpx solid var(--glass-border);
 	border-radius: var(--radius-lg);
 	overflow: hidden;
 	/* 同 .page-jump-panel：阴影模糊半径从 80rpx 降到 48rpx */
 	box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.5);
 	will-change: transform, opacity;
 	animation: panel-pop 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 液态玻璃：长按操作弹窗（大面板 blur 18px） */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+	.manga-action-panel {
+		background-color: var(--glass-bg-strong);
+		-webkit-backdrop-filter: blur(var(--glass-blur-l)) saturate(160%);
+		backdrop-filter: blur(var(--glass-blur-l)) saturate(160%);
+		box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.5), inset 0 1rpx 0 var(--glass-highlight);
+	}
 }
 
 .manga-action-title {
@@ -4391,7 +4476,7 @@ function finishSwiperReset() {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	border-top: 1rpx solid rgba(250, 249, 245, 0.06);
+	border-top: 1rpx solid rgba(245, 245, 247, 0.06);
 	transition: background-color 120ms ease-out;
 }
 
@@ -4412,7 +4497,7 @@ function finishSwiperReset() {
 
 .manga-action-cancel-item {
 	margin-top: 12rpx;
-	border-top: 1rpx solid rgba(250, 249, 245, 0.10);
+	border-top: 1rpx solid rgba(245, 245, 247, 0.10);
 }
 
 .manga-action-cancel-text {
@@ -4539,6 +4624,7 @@ function finishSwiperReset() {
 	align-items: center;
 	padding: 20rpx 28rpx;
 	margin-bottom: 12rpx;
+	/* 降级底色：无 backdrop-filter 时的纯色卡片 */
 	background-color: var(--surface-1);
 	border-radius: var(--radius-md);
 	transition: transform 120ms ease-out, background-color 120ms ease-out;
@@ -4546,6 +4632,27 @@ function finishSwiperReset() {
 	/* 隔离单条目 :active 状态变化引起的重绘范围，长列表滚动更顺滑 */
 	contain: layout style paint;
 	animation: folder-reveal 280ms ease-out both;
+}
+
+/* 液态玻璃：列表卡片（轻玻璃 blur 8px + 白膜）
+ * 性能护栏：scrolling 态（见 .folder-list-scrolling）退回纯色，
+ * 避免 WebView 逐帧重栅化 backdrop 导致滚动掉帧 */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+	.folder-item {
+		background-color: var(--glass-bg);
+		border: 1rpx solid var(--glass-border);
+		-webkit-backdrop-filter: blur(var(--glass-blur-s)) saturate(150%);
+		backdrop-filter: blur(var(--glass-blur-s)) saturate(150%);
+		box-shadow: inset 0 1rpx 0 var(--glass-highlight);
+	}
+	/* 滚动中：玻璃 → 纯色（一次性切换，滚动期间零 blur 开销） */
+	.folder-list-scrolling .folder-item {
+		background-color: var(--surface-1);
+		border-color: transparent;
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+		box-shadow: none;
+	}
 }
 
 .folder-item:active {
@@ -4593,14 +4700,14 @@ function finishSwiperReset() {
 .cover-placeholder-icon {
 	width: 56rpx;
 	height: 56rpx;
-	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2346443B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M24 13L24 37'/><path d='M24 13C20 10 13 9 7 11L7 35C13 33 20 34 24 37'/><path d='M24 13C28 10 35 9 41 11L41 35C35 33 28 34 24 37'/></svg>");
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2348484E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M24 13L24 37'/><path d='M24 13C20 10 13 9 7 11L7 35C13 33 20 34 24 37'/><path d='M24 13C28 10 35 9 41 11L41 35C35 33 28 34 24 37'/></svg>");
 	background-size: contain;
 	background-repeat: no-repeat;
 	background-position: center;
 }
 
 .cover-placeholder-icon--pdf {
-	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2346443B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 6L30 6L38 14L38 42L12 42Z'/><path d='M30 6L30 14L38 14'/><path d='M18 24L32 24'/><path d='M18 30L32 30'/><path d='M18 36L28 36'/></svg>");
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%2348484E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 6L30 6L38 14L38 42L12 42Z'/><path d='M30 6L30 14L38 14'/><path d='M18 24L32 24'/><path d='M18 30L32 30'/><path d='M18 36L28 36'/></svg>");
 }
 
 .folder-info {
@@ -4626,7 +4733,7 @@ function finishSwiperReset() {
 }
 
 /* 空状态：线描插图 + 主标题 + 辅助说明 + Serif 引导语
- * 插图颜色硬编码为 #46443B（= --text-disabled），SVG data URI 不能引用 CSS 变量。
+ * 插图颜色硬编码为 #48484E（= --text-disabled），SVG data URI 不能引用 CSS 变量。
  * 呼吸动画 4s 一个周期、位移 8rpx（≈4dp），暗示「空间是活的、在等你」。 */
 .empty-library {
 	flex: 1;
@@ -4650,11 +4757,11 @@ function finishSwiperReset() {
 }
 
 .empty-illustration--shelf {
-	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%23464443B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 32 L20 88 M20 32 L100 32 M100 32 L100 88 M20 88 L100 88'/><path d='M20 60 L100 60'/><rect x='32' y='38' width='6' height='18' rx='1'/><rect x='44' y='38' width='5' height='18' rx='1'/><rect x='34' y='66' width='5' height='18' rx='1'/><rect x='48' y='68' width='5' height='16' rx='1' transform='rotate(15 50 76)'/><circle cx='78' cy='100' r='6'/><path d='M82 104 L90 112'/></svg>");
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%2348484E' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M20 32 L20 88 M20 32 L100 32 M100 32 L100 88 M20 88 L100 88'/><path d='M20 60 L100 60'/><rect x='32' y='38' width='6' height='18' rx='1'/><rect x='44' y='38' width='5' height='18' rx='1'/><rect x='34' y='66' width='5' height='18' rx='1'/><rect x='48' y='68' width='5' height='16' rx='1' transform='rotate(15 50 76)'/><circle cx='78' cy='100' r='6'/><path d='M82 104 L90 112'/></svg>");
 }
 
 .empty-illustration--search {
-	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%23464443B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='50' cy='50' r='24'/><path d='M68 68 L86 86'/><path d='M44 46 Q50 40 56 46 Q60 52 50 56'/><circle cx='50' cy='62' r='0.9' fill='%23464443B' stroke='none'/></svg>");
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%2348484E' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='50' cy='50' r='24'/><path d='M68 68 L86 86'/><path d='M44 46 Q50 40 56 46 Q60 52 50 56'/><circle cx='50' cy='62' r='0.9' fill='%2348484E' stroke='none'/></svg>");
 }
 
 @keyframes empty-breath {
@@ -4696,21 +4803,23 @@ function finishSwiperReset() {
 	min-height: 88rpx;
 	display: flex;
 	align-items: center;
-	/* 阅读 Hot Path：去掉 backdrop-filter:blur(12px)（Android WebView 每帧离栅化背景纹理，
-	   在 swiper/scroll 滚动时会持续触发，是阅读卡顿主因）。改用更高不透明度的纯色背景，
-	   视觉上与原模糊效果接近（暗背景下模糊原本就只是淡化背景细节）。 */
-	background-color: rgba(28, 26, 23, 0.94);
-	border: 1rpx solid rgba(250, 249, 245, 0.10);
+	/* 液态玻璃 clear 变体：轻白膜 + 模糊。此前的纯色方案是为常驻显示期
+	   规避 WebView 逐帧离栅化；现控件改为点击显示（页面静止时才出现），
+	   重上玻璃。真机验证若翻页卡顿则回退纯色 rgba(28,29,34,0.94)。 */
+	background-color: var(--glass-bg-clear);
+	border: 1rpx solid var(--glass-border);
 	border-radius: 999rpx;
-	/* 提升为独立合成层：固定定位控件不再随主内容一起重绘，
-	   swiper/scroll 滚动时这些控件不再触发 repaint。 */
+	-webkit-backdrop-filter: blur(14px) saturate(150%);
+	backdrop-filter: blur(14px) saturate(150%);
+	box-shadow: 0 4rpx 18rpx rgba(0, 0, 0, 0.35), inset 0 1rpx 0 var(--glass-highlight);
+	/* 提升为独立合成层：固定定位控件不再随主内容一起重绘 */
 	transform: translateZ(0);
 	transition: transform 120ms ease-out, background-color 120ms ease-out;
 }
 
 .back-btn:active {
 	transform: scale(0.94);
-	background-color: rgba(46, 44, 40, 0.92);
+	background-color: var(--glass-bg);
 }
 
 .back-text {
@@ -4786,7 +4895,7 @@ function finishSwiperReset() {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background-color: rgba(250, 249, 245, 0.025);
+	background-color: rgba(245, 245, 247, 0.025);
 }
 
 .movable-area {
@@ -4845,14 +4954,27 @@ function finishSwiperReset() {
 .progress-capsule {
 	position: relative;
 	overflow: hidden;
-	/* 同阅读器其它常驻控件：去掉 backdrop-filter，改纯色 + 独立合成层 */
-	background-color: rgba(28, 26, 23, 0.94);
+	/* 液态玻璃 clear 变体：轻白膜 + 模糊（同 .back-btn，真机验证可回退） */
+	background-color: var(--glass-bg-clear);
+	border: 1rpx solid var(--glass-border);
 	border-radius: 999rpx;
 	padding: 20rpx 48rpx;
 	min-height: 88rpx;
 	display: flex;
 	align-items: center;
-	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.35);
+	-webkit-backdrop-filter: blur(14px) saturate(150%);
+	backdrop-filter: blur(14px) saturate(150%);
+	box-shadow: 0 4rpx 18rpx rgba(0, 0, 0, 0.35), inset 0 1rpx 0 var(--glass-highlight);
+}
+
+/* 降级：WebView 不支持 backdrop-filter 时，阅读器三个控件回退高不透明纯色，
+ * 保证文字在漫画内容上仍可读 */
+@supports not (backdrop-filter: blur(1px)) {
+	.back-btn,
+	.reader-mode-toggle,
+	.progress-capsule {
+		background-color: rgba(28, 29, 34, 0.94);
+	}
 }
 
 .progress-text {

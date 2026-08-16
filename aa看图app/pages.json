@@ -5,7 +5,7 @@
 			"style": {
 				"navigationBarTitleText": "漫画阅读",
 				"navigationStyle": "custom",
-			"backgroundColor": "#141210",
+			"backgroundColor": "#0C0D10",
 				"app-plus": {
 					"titleNView": false,
 					"bounce": "none"
