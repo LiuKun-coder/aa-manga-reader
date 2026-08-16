@@ -16,12 +16,9 @@
 					去授权
 				</button>
 			</view>
+				<!-- iOS Large Title：粗体无衬线大标题 -->
 			<view class="library-header">
 				<text class="library-title">书库</text>
-				<view class="library-header-meta">
-					<text class="library-subtitle">LIBRARY</text>
-					<view class="library-header-line"></view>
-				</view>
 			</view>
 			<view class="library-toolbar">
 				<view class="search-wrap">
@@ -4020,7 +4017,9 @@ function finishSwiperReset() {
 	--glass-blur-l: 18px;  /* 弹窗大面板 */
 	--glass-bg: rgba(255, 255, 255, 0.08);
 	--glass-bg-strong: rgba(255, 255, 255, 0.12);
-	--glass-bg-clear: rgba(255, 255, 255, 0.05);
+	/* clear 变体：35% 黑色调暗层（HIG 唯一量化规则：覆盖明亮内容必须调暗，
+	   白底漫画页上保证白字可读） */
+	--glass-bg-clear: rgba(18, 19, 24, 0.35);
 	--glass-border: rgba(255, 255, 255, 0.14);
 	--glass-highlight: rgba(255, 255, 255, 0.10);
 	/* ── 功能色 ── */
@@ -4032,9 +4031,8 @@ function finishSwiperReset() {
 	--radius-sm: 16rpx;
 	--radius-md: 24rpx;
 	--radius-lg: 40rpx;
-	/* ── 字体 ── */
-	--font-serif: "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", serif;
-	--font-sans: "Noto Sans CJK SC", "PingFang SC", "Helvetica Neue", Helvetica, sans-serif;
+	/* ── 字体（iOS 风：全无衬线，PingFang 优先）── */
+	--font-sans: "PingFang SC", "Noto Sans CJK SC", "Helvetica Neue", Helvetica, sans-serif;
 	width: 100vw;
 	height: 100vh;
 	background-color: var(--surface-0);
@@ -4104,7 +4102,8 @@ function finishSwiperReset() {
 	background-color: var(--brand);
 	border: none;
 	border-radius: 999rpx;
-	box-shadow: 0 8rpx 32rpx rgba(10, 132, 255, 0.30);
+	/* iOS 实心按钮：中性投影，不用品牌色辉光 */
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.30);
 }
 
 /* 书库列表 */
@@ -4126,32 +4125,12 @@ function finishSwiperReset() {
 
 .library-title {
 	display: block;
-	font-family: var(--font-serif);
+	/* iOS Large Title：34pt 粗体无衬线、字距收紧 */
 	color: var(--text-primary);
-	font-size: 56rpx;
+	font-size: 68rpx;
 	font-weight: 700;
-	letter-spacing: 2rpx;
+	letter-spacing: 0;
 	line-height: 1.15;
-	margin-bottom: 8rpx;
-}
-
-.library-header-meta {
-	display: flex;
-	align-items: center;
-}
-
-.library-subtitle {
-	font-size: 20rpx;
-	font-weight: 600;
-	color: var(--brand);
-	letter-spacing: 6rpx;
-}
-
-.library-header-line {
-	flex: 1;
-	height: 1rpx;
-	background: linear-gradient(90deg, rgba(10, 132, 255, 0.5) 0%, rgba(10, 132, 255, 0.08) 50%, transparent 100%);
-	margin-left: 16rpx;
 }
 
 /* 阅读界面右上角的横/竖切换按钮（与左上角"← 书库"对称） */
@@ -4164,7 +4143,7 @@ function finishSwiperReset() {
 	min-height: 88rpx;
 	display: flex;
 	align-items: center;
-	/* 液态玻璃 clear 变体：轻白膜 + 模糊（默认显示时阅读页静止，开销可控；
+	/* 液态玻璃 clear 变体：35% 调暗层 + 模糊（HIG：覆盖明亮内容必须调暗；
 	   真机验证若翻页卡顿则回退纯色 rgba(28,29,34,0.94)） */
 	background-color: var(--glass-bg-clear);
 	border: 1rpx solid var(--glass-border);
@@ -4178,7 +4157,8 @@ function finishSwiperReset() {
 
 .reader-mode-toggle:active {
 	transform: scale(0.94);
-	background-color: var(--glass-bg);
+	/* 按压态保持调暗（比静止态亮一档做反馈），白底页上文字仍可读 */
+	background-color: rgba(40, 42, 50, 0.45);
 }
 
 .reader-mode-toggle-text {
@@ -4287,7 +4267,6 @@ function finishSwiperReset() {
 }
 
 .library-section-letter {
-	font-family: var(--font-serif);
 	color: var(--brand);
 	font-size: 34rpx;
 	font-weight: 600;
@@ -4786,9 +4765,7 @@ function finishSwiperReset() {
 .empty-quote {
 	margin-top: 24rpx;
 	color: var(--text-disabled);
-	font-family: var(--font-serif);
 	font-size: 26rpx;
-	font-style: italic;
 	letter-spacing: 1rpx;
 }
 
@@ -4802,7 +4779,7 @@ function finishSwiperReset() {
 	min-height: 88rpx;
 	display: flex;
 	align-items: center;
-	/* 液态玻璃 clear 变体：轻白膜 + 模糊。此前的纯色方案是为常驻显示期
+	/* 液态玻璃 clear 变体：35% 调暗层 + 模糊。此前的纯色方案是为常驻显示期
 	   规避 WebView 逐帧离栅化；现控件改为点击显示（页面静止时才出现），
 	   重上玻璃。真机验证若翻页卡顿则回退纯色 rgba(28,29,34,0.94)。 */
 	background-color: var(--glass-bg-clear);
@@ -4818,7 +4795,8 @@ function finishSwiperReset() {
 
 .back-btn:active {
 	transform: scale(0.94);
-	background-color: var(--glass-bg);
+	/* 按压态保持调暗（同 .reader-mode-toggle） */
+	background-color: rgba(40, 42, 50, 0.45);
 }
 
 .back-text {
@@ -4953,7 +4931,7 @@ function finishSwiperReset() {
 .progress-capsule {
 	position: relative;
 	overflow: hidden;
-	/* 液态玻璃 clear 变体：轻白膜 + 模糊（同 .back-btn，真机验证可回退） */
+	/* 液态玻璃 clear 变体：35% 调暗层（同 .back-btn，真机验证可回退） */
 	background-color: var(--glass-bg-clear);
 	border: 1rpx solid var(--glass-border);
 	border-radius: 999rpx;
