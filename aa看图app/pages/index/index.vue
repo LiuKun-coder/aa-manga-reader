@@ -398,24 +398,24 @@ const PATH_LIST_KEY_PREFIX = 'MangaReader_PathList_'
 const PATH_LIST_KEY_VERSION = 2
 /** 书库列表快照（启动时秒开） */
 const LIBRARY_SNAPSHOT_KEY = 'MangaReader_LibrarySnapshot'
-/** 后台补全：每次只处理 1 条，且仅在用户无操作空闲时运行 */
-const ENRICH_BATCH_SIZE = 1
+/** 后台补全：每次处理 2 条，且仅在用户无操作空闲时运行 */
+const ENRICH_BATCH_SIZE = 2
 /** 用户无操作多久后才开始补全剩余缩略图 */
-const ENRICH_IDLE_MS = 2800
+const ENRICH_IDLE_MS = 1500
 /** 两条补全之间的间隔（毫秒）— 后台慢速补全用 */
-const ENRICH_BATCH_GAP = 320
+const ENRICH_BATCH_GAP = 160
 /** 立即补全：文件夹类型单批并行处理条数（File 操作很快，一条 ~3-8ms） */
-const ENRICH_IMMEDIATE_FOLDER_BATCH = 8
+const ENRICH_IMMEDIATE_FOLDER_BATCH = 12
 /** 立即补全：PDF 类型单批条数（PdfRenderer 渲染慢，串行 1 条） */
 const ENRICH_IMMEDIATE_PDF_BATCH = 1
 /** 立即补全：批次之间的间隔（毫秒）— 比后台补全短，让可见封面更快出现 */
-const ENRICH_IMMEDIATE_GAP = 60
+const ENRICH_IMMEDIATE_GAP = 40
 /** 启动后优先补全可见区缩略图的数量 */
-const ENRICH_INITIAL_VISIBLE = 28
+const ENRICH_INITIAL_VISIBLE = 48
 /** 启动后优先补全缩略图的延迟（毫秒） */
 const ENRICH_INITIAL_DELAY_MS = 280
 /** 用户主动操作后暂停补全时长 */
-const ENRICH_PAUSE_ON_ACTIVITY_MS = 8000
+const ENRICH_PAUSE_ON_ACTIVITY_MS = 3000
 /** 每补全多少条才写一次快照 */
 const ENRICH_SNAPSHOT_EVERY = 12
 /** 子目录 PDF 后台扫描延迟 */
@@ -2863,8 +2863,10 @@ function enrichSingleItem(folder) {
 				saveFolderMeta(folder.path, stored.imageCount, mtime, thumbUrl)
 				return buildLibraryItem(folder.name, folder.path, { ...stored, coverPath: thumbUrl }, 'folder')
 			}
-			// 缩略图未生成：触发异步生成，先用原图返回（下次 enrich 重试）
+			// 缩略图未生成：不再用原图占位（WebView 解码大图比等缩略图更慢），
+			// 占位图标 + 异步生成，完成后 updateFolderCoverInLibrary 回写
 			scheduleFolderThumbRender(folder.path, stored.coverPath)
+			return buildLibraryItem(folder.name, folder.path, { ...stored, coverPath: '' }, 'folder')
 		}
 		return buildLibraryItem(folder.name, folder.path, stored, 'folder')
 	}
@@ -2881,8 +2883,8 @@ function enrichSingleItem(folder) {
 			if (thumbUrl) {
 				coverPath = thumbUrl
 			} else {
-				// 未命中：用原图占位，异步生成缩略图（下次进入即命中缓存）
-				coverPath = firstImg
+				// 未命中：不再用原图占位（大图解码风暴是首启卡顿主因），
+				// 留空显示占位图标，异步生成缩略图完成后回写
 				scheduleFolderThumbRender(folder.path, firstImg)
 			}
 		}
@@ -2890,7 +2892,7 @@ function enrichSingleItem(folder) {
 		imageCount = countImagesInFolderNative(folder.path)
 	}
 
-	// 原图占位不持久化 coverPath，让下次 enrich 重试缩略图生成；
+	// coverPath 为空（占位中）或缩略图缓存时才持久化；
 	// 缩略图生成成功后 updateFolderCoverInLibrary 会回写缩略图路径
 	const isThumbCache = !coverPath || coverPath.includes('folder_thumb/')
 	const savedCoverPath = isThumbCache ? coverPath : ''
@@ -2973,20 +2975,41 @@ function updatePdfCoverInLibrary(pdfAbsPath, coverPath) {
 	setMangaFolderAt(idx, buildLibraryItem(item.name, pdfAbsPath, meta, 'pdf'))
 }
 
-/** 异步生成文件夹缩略图并回写列表（不阻塞主线程）
- *  首次进入书库时缩略图缓存未命中，先用原图占位，生成完成后回写为缩略图路径 */
+/** 异步生成文件夹缩略图并回写列表（分帧队列，不阻塞渲染）
+ *  首次进入书库时缩略图缓存未命中，批量条目在此排队逐个生成；
+ *  generateFolderThumb 内 BitmapFactory.decodeFile 是同步 bridge 调用
+ *  （单张 100-300ms），若全部 setTimeout(0) 会在 JS 线程连续阻塞 3-8s，
+ *  导致列表渲染/图片回调全部排队 —— 改为每帧最多跑 1 个（间隔 16ms），
+ *  让渲染帧插进解码任务之间。 */
+const _thumbRenderQueue = []
+let _thumbRenderTimer = null
+
 function scheduleFolderThumbRender(folderAbsPath, srcFileUrl) {
 	// #ifdef APP-PLUS
-	setTimeout(() => {
-		try {
-			const thumbUrl = generateFolderThumb(srcFileUrl, FOLDER_THUMB_WIDTH)
-			if (thumbUrl) {
-				updateFolderCoverInLibrary(folderAbsPath, thumbUrl)
-			}
-		} catch (e) {
-			console.error('异步生成文件夹缩略图失败', folderAbsPath, e)
+	// 去重：同一路径重复排队无意义
+	if (_thumbRenderQueue.some((t) => t[0] === folderAbsPath)) return
+	_thumbRenderQueue.push([folderAbsPath, srcFileUrl])
+	if (_thumbRenderTimer) return
+	_thumbRenderTimer = setTimeout(processThumbRenderQueue, 16)
+	// #endif
+}
+
+function processThumbRenderQueue() {
+	// #ifdef APP-PLUS
+	_thumbRenderTimer = null
+	const task = _thumbRenderQueue.shift()
+	if (!task) return
+	try {
+		const thumbUrl = generateFolderThumb(task[1], FOLDER_THUMB_WIDTH)
+		if (thumbUrl) {
+			updateFolderCoverInLibrary(task[0], thumbUrl)
 		}
-	}, 0)
+	} catch (e) {
+		console.error('异步生成文件夹缩略图失败', task[0], e)
+	}
+	if (_thumbRenderQueue.length > 0) {
+		_thumbRenderTimer = setTimeout(processThumbRenderQueue, 16)
+	}
 	// #endif
 }
 
