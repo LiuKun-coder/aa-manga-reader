@@ -1068,7 +1068,7 @@ function confirmDeleteManga(folder) {
 		title: '删除漫画',
 		content: `将永久删除本地文件：「${folder.name}」，且不可恢复。是否继续？`,
 		confirmText: '删除',
-		confirmColor: '#e64340',
+		confirmColor: '#FF453A',
 		cancelText: '取消',
 		success: (res) => {
 			if (res.confirm) {
@@ -4022,11 +4022,10 @@ function finishSwiperReset() {
 	--glass-bg-clear: rgba(18, 19, 24, 0.35);
 	--glass-border: rgba(255, 255, 255, 0.14);
 	--glass-highlight: rgba(255, 255, 255, 0.10);
-	/* ── 功能色 ── */
-	--info-blue: #64A0FF;
-	--success: #8CA06F;
-	--warning: #E8C86A;
-	--error: #EF4444;
+	/* ── 功能色（iOS system colors 深色模式）── */
+	--success: #30D158;
+	--warning: #FFD60A;
+	--error: #FF453A;
 	/* ── 圆角（全 App 统一三档）── */
 	--radius-sm: 16rpx;
 	--radius-md: 24rpx;
@@ -4060,13 +4059,13 @@ function finishSwiperReset() {
 	margin-bottom: 24rpx;
 	padding: 20rpx 24rpx;
 	border-radius: var(--radius-md);
-	background-color: rgba(232, 200, 106, 0.10);
-	border: 1rpx solid rgba(232, 200, 106, 0.28);
+	background-color: rgba(255, 214, 10, 0.10);
+	border: 1rpx solid rgba(255, 214, 10, 0.28);
 }
 
 .status-banner-text {
 	flex: 1;
-	color: rgba(232, 200, 106, 0.95);
+	color: rgba(255, 214, 10, 0.95);
 	font-size: 24rpx;
 	line-height: 1.5;
 }
@@ -4286,7 +4285,7 @@ function finishSwiperReset() {
 	text-align: center;
 	font-size: 18rpx;
 	color: #fff;
-	background-color: rgba(239, 68, 68, 0.88);
+	background-color: rgba(255, 69, 58, 0.88);
 	padding: 4rpx 0;
 	border-radius: 0 0 var(--radius-sm) var(--radius-sm);
 }
@@ -4459,7 +4458,8 @@ function finishSwiperReset() {
 }
 
 .manga-action-item:active {
-	background-color: var(--surface-2);
+	/* 玻璃面板内的按压态：半透明白（iOS 菜单高亮惯例），不破坏面板玻璃质感 */
+	background-color: rgba(255, 255, 255, 0.08);
 }
 
 .manga-action-text {
@@ -4576,7 +4576,7 @@ function finishSwiperReset() {
 }
 
 .history-progress {
-	color: var(--info-blue);
+	color: var(--brand-light);
 	font-size: 20rpx;
 	margin-bottom: 2rpx;
 }
@@ -4654,7 +4654,7 @@ function finishSwiperReset() {
 	right: 4rpx;
 	bottom: 4rpx;
 	padding: 2rpx 10rpx;
-	background-color: rgba(239, 68, 68, 0.92);
+	background-color: rgba(255, 69, 58, 0.92);
 	color: #fff;
 	font-size: 18rpx;
 	border-radius: 8rpx;
