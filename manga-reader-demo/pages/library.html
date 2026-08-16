@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>书库首页</title>
+    <style id="theme-vars">
+/* ═══ Claude-inspired Warm Dark color system for manga reader ═══ */
+:root {
+  /* ── Brand ── */
+  --brand-50: #3a2a22;
+  --brand-100: #4d3528;
+  --brand-200: #6b4533;
+  --brand-300: #8a5740;
+  --brand-400: #b0683f;
+  --brand-500: #d97757;
+  --brand-600: #e08d6f;
+  --brand-700: #e8a98f;
+  --brand-800: #f0c6b3;
+  --brand-900: #f8e3d8;
+
+  /* ── Surfaces (warm dark, deepest → lightest) ── */
+  --surface-0: #141210;
+  --surface-1: #1c1a17;
+  --surface-2: #252320;
+  --surface-3: #2e2c28;
+  --surface-4: #383530;
+
+  /* ── Text ── */
+  --text-primary: #faf9f5;
+  --text-secondary: #b7b5a9;
+  --text-tertiary: #6e6d68;
+  --text-disabled: #46443b;
+
+  /* ── Borders ── */
+  --border-subtle: #2c2c2b;
+  --border-default: #4a4a43;
+  --border-strong: #6e6d68;
+
+  /* ── Functional ── */
+  --success: #8ca06f;
+  --warning: #e8c86a;
+  --error: #ef4444;
+  --info: #64a0ff;
+
+  /* ── Typography ── */
+  --font-display: 'Newsreader', 'Georgia', ui-serif, serif;
+  --font-sans: 'Poppins', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  --font-cjk: 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* ── Radius ── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  /* ── Shadows ── */
+  --shadow-xs: 0 1px 3px 0 rgba(0,0,0,0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
+  --shadow-md: 0 1px 3px 0 rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.1);
+  --shadow-lg: 0 1px 3px 0 rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.1);
+  --shadow-xl: 0 1px 3px 0 rgba(0,0,0,0.1), 0 8px 10px -1px rgba(0,0,0,0.1);
+}
+
+.dark {
+  --surface-0: #141210;
+  --surface-1: #1c1a17;
+  --surface-2: #252320;
+  --surface-3: #2e2c28;
+  --surface-4: #383530;
+  --text-primary: #faf9f5;
+  --text-secondary: #b7b5a9;
+  --text-tertiary: #6e6d68;
+  --text-disabled: #46443b;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--text-primary);
+    --color-secondary: var(--text-secondary);
+  }
+  @layer base {
+    body { background: var(--surface-0); color: var(--text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+
+      /* ── Custom component styles ── */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        font-family: var(--font-sans), var(--font-cjk);
+        background: var(--surface-0);
+        color: var(--text-primary);
+        max-width: 375px;
+        margin: 0 auto;
+        min-height: 100vh;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* ── Progress ring SVG ── */
+      .progress-ring-circle {
+        transition: stroke-dashoffset 0.35s;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+      }
+
+      /* ── Continue reading scroll container ── */
+      .continue-scroll {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding: 0 20px;
+        scroll-snap-type: x mandatory;
+      }
+      .continue-scroll::-webkit-scrollbar { display: none; }
+      .continue-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+      .continue-card {
+        flex-shrink: 0;
+        width: 80px;
+        scroll-snap-align: start;
+      }
+
+      /* ── Filter chips scroll ── */
+      .chips-scroll {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 0 20px;
+      }
+      .chips-scroll::-webkit-scrollbar { display: none; }
+      .chips-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+      .chip {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 32px;
+        padding: 0 16px;
+        border-radius: var(--radius-full);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+        border: none;
+        outline: none;
+      }
+      .chip-unselected {
+        background: var(--surface-2);
+        color: var(--text-tertiary);
+      }
+      .chip-selected {
+        background: var(--brand-50);
+        color: var(--brand-500);
+      }
+
+      /* ── Manga list item ── */
+      .manga-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--surface-1);
+        border-radius: var(--radius-md);
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+      .manga-item:hover,
+      .manga-item:active {
+        background: var(--surface-2);
+      }
+
+      .manga-cover {
+        flex-shrink: 0;
+        width: 80px;
+        height: 112px;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+      }
+
+      /* Cover gradients for variety */
+      .cover-1 { background: linear-gradient(135deg, #2e2c28 0%, #4d3528 100%); }
+      .cover-2 { background: linear-gradient(135deg, #2c2420 0%, #6b4533 100%); }
+      .cover-3 { background: linear-gradient(135deg, #2a2822 0%, #3a2a22 100%); }
+      .cover-4 { background: linear-gradient(135deg, #302c26 0%, #8a5740 60%); }
+      .cover-5 { background: linear-gradient(135deg, #28241e 0%, #b0683f 80%); }
+      .cover-6 { background: linear-gradient(145deg, #2e2620 0%, #5a3a28 100%); }
+      .cover-7 { background: linear-gradient(160deg, #322e28 0%, #6b5533 100%); }
+      .cover-8 { background: linear-gradient(130deg, #262220 0%, #4a3520 100%); }
+
+      /* Small continue-reading cover */
+      .cover-sm {
+        width: 64px;
+        height: 88px;
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-xs);
+        position: relative;
+      }
+
+      .manga-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .pdf-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(220, 60, 60, 0.92);
+        color: #ffffff;
+        font-size: 9px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.04em;
+        width: fit-content;
+      }
+    </style>
+</head>
+<body>
+    <main>
+
+        <!-- ── 1. Status bar area + Page title ── -->
+        <div style="padding-top: 24px; padding-left: 20px; padding-right: 20px; padding-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+            <!-- Book icon SVG (stroke-based, brand color) -->
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97757" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+            <h1 style="font-size: 24px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; line-height: 1.2;">
+                书库
+            </h1>
+        </div>
+
+        <!-- ── 2. Search bar ── -->
+        <div style="padding: 0 20px 16px 20px;">
+            <div style="display: flex; align-items: center; gap: 10px; background: var(--surface-3); border-radius: var(--radius-md); height: 44px; padding: 0 14px;">
+                <!-- Search icon SVG -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6e6d68" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input
+                    type="text"
+                    placeholder="搜索漫画名"
+                    style="
+                        flex: 1;
+                        background: transparent;
+                        border: none;
+                        outline: none;
+                        font-size: 15px;
+                        color: var(--text-primary);
+                        font-family: var(--font-sans), var(--font-cjk);
+                    "
+                />
+            </div>
+        </div>
+
+        <!-- ── 3. "继续阅读" section ── -->
+        <div style="margin-bottom: 20px;">
+            <div style="padding: 0 20px 12px 20px; display: flex; align-items: center; gap: 8px;">
+                <span style="
+                    font-size: 11px;
+                    font-weight: 600;
+                    letter-spacing: 0.08em;
+                    color: var(--brand-500);
+                    text-transform: uppercase;
+                ">继续阅读</span>
+            </div>
+
+            <div class="continue-scroll">
+
+                <!-- Card 1 (with progress ring) -->
+                <div class="continue-card">
+                    <div class="cover-sm cover-1" style="position: relative;">
+                        <svg width="20" height="20" viewBox="0 0 20 20" style="position: absolute; top: -3px; right: -3px; z-index: 2;">
+                            <circle cx="10" cy="10" r="8" fill="rgba(20,18,16,0.7)" stroke="none"/>
+                            <circle cx="10" cy="10" r="7.5" fill="none" stroke="rgba(100,100,90,0.25)" stroke-width="1.5"/>
+                            <circle class="progress-ring-circle" cx="10" cy="10" r="7.5" fill="none" stroke="#d97757" stroke-width="1.8"
+                                stroke-dasharray="47.12"
+                                stroke-dashoffset="35.34"
+                                stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <p style="font-size: 11px; font-weight: 400; color: var(--text-primary); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;">
+                        进击的巨人
+                    </p>
+                    <p style="font-size: 10px; color: var(--info); margin-top: 2px;">12/256</p>
+                    <p style="font-size: 9px; color: var(--text-tertiary); margin-top: 2px; display: flex; align-items: center; gap: 3px;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6e6d68" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        3分钟前
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="continue-card">
+                    <div class="cover-sm cover-2"></div>
+                    <p style="font-size: 11px; font-weight: 400; color: var(--text-primary); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;">
+                        鬼灭之刃
+                    </p>
+                    <p style="font-size: 10px; color: var(--info); margin-top: 2px;">45/201</p>
+                    <p style="font-size: 9px; color: var(--text-tertiary); margin-top: 2px; display: flex; align-items: center; gap: 3px;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6e6d68" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        1小时前
+                    </p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="continue-card">
+                    <div class="cover-sm cover-3"></div>
+                    <p style="font-size: 11px; font-weight: 400; color: var(--text-primary); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;">
+                        咒术回战
+                    </p>
+                    <p style="font-size: 10px; color: var(--info); margin-top: 2px;">89/244</p>
+                    <p style="font-size: 9px; color: var(--text-tertiary); margin-top: 2px; display: flex; align-items: center; gap: 3px;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6e6d68" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        昨天
+                    </p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="continue-card">
+                    <div class="cover-sm cover-4"></div>
+                    <p style="font-size: 11px; font-weight: 400; color: var(--text-primary); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;">
+                        间谍过家家
+                    </p>
+                    <p style="font-size: 10px; color: var(--info); margin-top: 2px;">7/98</p>
+                    <p style="font-size: 9px; color: var(--text-tertiary); margin-top: 2px; display: flex; align-items: center; gap: 3px;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6e6d68" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        2天前
+                    </p>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="continue-card">
+                    <div class="cover-sm cover-5"></div>
+                    <p style="font-size: 11px; font-weight: 400; color: var(--text-primary); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;">
+                        海贼王
+                    </p>
+                    <p style="font-size: 10px; color: var(--info); margin-top: 2px;">256/1100</p>
+                    <p style="font-size: 9px; color: var(--text-tertiary); margin-top: 2px; display: flex; align-items: center; gap: 3px;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6e6d68" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        3天前
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ── 4. Filter chips row ── -->
+        <div style="padding-bottom: 16px;">
+            <div class="chips-scroll">
+                <button class="chip chip-selected">全部</button>
+                <button class="chip chip-unselected">最近</button>
+                <button class="chip chip-unselected">漫画</button>
+                <button class="chip chip-unselected">PDF</button>
+            </div>
+        </div>
+
+        <!-- ── 5. Manga list ── -->
+        <div style="padding: 0 20px;">
+
+            <!-- Item 1: 进击的巨人 -->
+            <div class="manga-item" data-dom-id="enter-reader-1">
+                <div class="manga-cover cover-6"></div>
+                <div class="manga-info">
+                    <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">进击的巨人</span>
+                    <span style="font-size: 13px; font-weight: 400; color: var(--text-secondary); margin-top: 2px;">已读 128/256页</span>
+                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                        <span style="font-size: 10px; color: var(--text-tertiary);">漫画 · 139话</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item 2: 鬼灭之刃 -->
+            <div class="manga-item" data-dom-id="enter-reader-2">
+                <div class="manga-cover cover-7"></div>
+                <div class="manga-info">
+                    <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">鬼灭之刃</span>
+                    <span style="font-size: 13px; font-weight: 400; color: var(--text-secondary); margin-top: 2px;">已读 45/201页</span>
+                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                        <span style="font-size: 10px; color: var(--text-tertiary);">漫画 · 205话</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item 3: 咒术回战 -->
+            <div class="manga-item" data-dom-id="enter-reader-3">
+                <div class="manga-cover cover-8"></div>
+                <div class="manga-info">
+                    <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">咒术回战</span>
+                    <span style="font-size: 13px; font-weight: 400; color: var(--text-secondary); margin-top: 2px;">已读 189/244页</span>
+                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                        <span class="pdf-badge">PDF</span>
+                        <span style="font-size: 10px; color: var(--text-tertiary);">256MB</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item 4: 间谍过家家 -->
+            <div class="manga-item">
+                <div class="manga-cover cover-4"></div>
+                <div class="manga-info">
+                    <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">间谍过家家</span>
+                    <span style="font-size: 13px; font-weight: 400; color: var(--text-secondary); margin-top: 2px;">已读 67/98页</span>
+                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                        <span style="font-size: 10px; color: var(--text-tertiary);">漫画 · 102话</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item 5: 我的英雄学院 -->
+            <div class="manga-item">
+                <div class="manga-cover cover-5"></div>
+                <div class="manga-info">
+                    <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">我的英雄学院</span>
+                    <span style="font-size: 13px; font-weight: 400; color: var(--text-secondary); margin-top: 2px;">已读 312/430页</span>
+                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                        <span class="pdf-badge">PDF</span>
+                        <span style="font-size: 10px; color: var(--text-tertiary);">189MB</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ── 6. Bottom safe area ── -->
+        <div style="height: 16px;"></div>
+
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>阅读器页</title>
+    <style id="theme-vars">
+/* ═══ Claude-inspired Warm Dark color system for manga reader ═══ */
+:root {
+  /* ── Brand ── */
+  --brand-50: #3a2a22;
+  --brand-100: #4d3528;
+  --brand-200: #6b4533;
+  --brand-300: #8a5740;
+  --brand-400: #b0683f;
+  --brand-500: #d97757;
+  --brand-600: #e08d6f;
+  --brand-700: #e8a98f;
+  --brand-800: #f0c6b3;
+  --brand-900: #f8e3d8;
+
+  /* ── Surfaces (warm dark, deepest → lightest) ── */
+  --surface-0: #141210;
+  --surface-1: #1c1a17;
+  --surface-2: #252320;
+  --surface-3: #2e2c28;
+  --surface-4: #383530;
+
+  /* ── Text ── */
+  --text-primary: #faf9f5;
+  --text-secondary: #b7b5a9;
+  --text-tertiary: #6e6d68;
+  --text-disabled: #46443b;
+
+  /* ── Borders ── */
+  --border-subtle: #2c2c2b;
+  --border-default: #4a4a43;
+  --border-strong: #6e6d68;
+
+  /* ── Functional ── */
+  --success: #8ca06f;
+  --warning: #e8c86a;
+  --error: #ef4444;
+  --info: #64a0ff;
+
+  /* ── Typography ── */
+  --font-display: 'Newsreader', 'Georgia', ui-serif, serif;
+  --font-sans: 'Poppins', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  --font-cjk: 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* ── Radius ── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  /* ── Shadows ── */
+  --shadow-xs: 0 1px 3px 0 rgba(0,0,0,0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
+  --shadow-md: 0 1px 3px 0 rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.1);
+  --shadow-lg: 0 1px 3px 0 rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.1);
+  --shadow-xl: 0 1px 3px 0 rgba(0,0,0,0.1), 0 8px 10px -1px rgba(0,0,0,0.1);
+}
+
+.dark {
+  --surface-0: #141210;
+  --surface-1: #1c1a17;
+  --surface-2: #252320;
+  --surface-3: #2e2c28;
+  --surface-4: #383530;
+  --text-primary: #faf9f5;
+  --text-secondary: #b7b5a9;
+  --text-tertiary: #6e6d68;
+  --text-disabled: #46443b;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--text-primary);
+    --color-secondary: var(--text-secondary);
+  }
+  @layer base {
+    body { background: var(--text-background); color: var(--text-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+
+      /* ── Reader page overrides ── */
+      body {
+        background: #000000 !important;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* ── Manga page with simulated panels ── */
+      .manga-page {
+        background: linear-gradient(180deg, #f5f0e8 0%, #ede7db 40%, #e8e0d0 100%);
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Screentone dot pattern overlay */
+      .manga-page::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle, #c5bdb0 0.6px, transparent 0.6px);
+        background-size: 8px 8px;
+        opacity: 0.18;
+        pointer-events: none;
+      }
+
+      /* Panel decorations */
+      .panel-line {
+        border: 1.5px solid #d5cdc0;
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .panel-line-dark {
+        border: 1.5px solid #b8b0a3;
+        background: rgba(0, 0, 0, 0.04);
+      }
+
+      /* Horizontal rule lines for panel separators */
+      .panel-hr {
+        height: 1.5px;
+        background: #cdc5b8;
+        width: 100%;
+        position: absolute;
+        left: 0;
+      }
+
+      .panel-vr {
+        width: 1.5px;
+        background: #cdc5b8;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+      }
+
+      /* Speech bubble hint */
+      .speech-bubble {
+        border: 1.5px solid #a09888;
+        border-radius: 50% 50% 50% 14px / 50% 50% 30% 14px;
+        background: white;
+        position: absolute;
+      }
+
+      /* Progress bar animation */
+      .progress-fill {
+        background: var(--brand-500);
+        border-radius: 9999px;
+        height: 2px;
+        transition: width 0.3s ease;
+      }
+    </style>
+</head>
+<body class="min-h-screen antialiased">
+
+    <main class="relative w-full h-screen flex items-center justify-center" style="background: #000000;">
+
+        <!-- ══════════════ MANGA PAGE ══════════════ -->
+        <div class="manga-page rounded-sm flex-shrink-0"
+             style="width: 90%; max-width: 400px; aspect-ratio: 1 / 1.4; box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 2px 12px rgba(0,0,0,0.4);">
+
+            <!-- Panel grid structure -->
+            <!-- Top-left wide panel -->
+            <div class="panel-line absolute"
+                 style="top: 6%; left: 6%; width: 56%; height: 32%;">
+            </div>
+
+            <!-- Top-right tall panel -->
+            <div class="panel-line-dark absolute"
+                 style="top: 6%; right: 6%; width: 30%; height: 52%;">
+            </div>
+
+            <!-- Middle-left panel -->
+            <div class="panel-line absolute"
+                 style="top: 42%; left: 6%; width: 38%; height: 24%;">
+            </div>
+
+            <!-- Middle-right small panel -->
+            <div class="panel-line-dark absolute"
+                 style="top: 62%; left: 48%; width: 24%; height: 14%;">
+            </div>
+
+            <!-- Bottom wide panel -->
+            <div class="panel-line absolute"
+                 style="top: 70%; left: 6%; width: 88%; height: 22%;">
+            </div>
+
+            <!-- Horizontal separator lines -->
+            <div class="panel-hr" style="top: 40%;"></div>
+            <div class="panel-hr" style="top: 68%;"></div>
+
+            <!-- Vertical separator line -->
+            <div class="panel-vr" style="left: 64%; top: 6%; height: 52%;"></div>
+
+            <!-- Speech bubbles -->
+            <div class="speech-bubble"
+                 style="top: 10%; left: 14%; width: 30px; height: 18px;">
+            </div>
+            <div class="speech-bubble"
+                 style="top: 12%; left: 50%; width: 26px; height: 14px; transform: scaleX(-1);">
+            </div>
+            <div class="speech-bubble"
+                 style="bottom: 28%; left: 10%; width: 28px; height: 16px;">
+            </div>
+
+            <!-- Inner panel detail: diagonal action lines in top-left panel -->
+            <div class="absolute" style="top: 6%; left: 6%; width: 56%; height: 32%; overflow: hidden; pointer-events: none;">
+                <div style="position: absolute; inset: 0; background: repeating-linear-gradient(
+                    135deg,
+                    transparent,
+                    transparent 8px,
+                    rgba(180, 170, 155, 0.12) 8px,
+                    rgba(180, 170, 155, 0.12) 9px
+                );"></div>
+            </div>
+
+            <!-- Inner panel detail: dense screentone in bottom panel -->
+            <div class="absolute" style="top: 70%; left: 6%; width: 88%; height: 22%; overflow: hidden; pointer-events: none;">
+                <div style="position: absolute; inset: 0; background-image: radial-gradient(circle, #b0a898 0.4px, transparent 0.4px); background-size: 3px 3px; opacity: 0.25;"></div>
+            </div>
+        </div>
+
+        <!-- ══════════════ TOP CONTROL BAR ══════════════ -->
+        <div class="absolute top-0 left-0 right-0 z-10"
+             style="height: 80px; background: linear-gradient(180deg, rgba(20, 18, 16, 0.92) 0%, rgba(20, 18, 16, 0.5) 60%, transparent 100%);">
+
+            <div class="absolute top-0 left-0 right-0 flex items-center justify-between"
+                 style="padding: 14px 16px 0 16px;">
+
+                <!-- Back to library button -->
+                <button data-dom-id="back-to-library"
+                        class="flex items-center gap-2 cursor-pointer"
+                        style="background: var(--surface-2, #252320); border: none; border-radius: 9999px; padding: 10px 18px; display: flex; align-items: center; gap: 6px;">
+                    <!-- Chevron left SVG -->
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#faf9f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="10 3 5 8 10 13"></polyline>
+                    </svg>
+                    <span style="font-family: var(--font-cjk, 'Noto Sans CJK SC', sans-serif); font-size: 13px; font-weight: 500; color: #faf9f5; line-height: 1; white-space: nowrap;">书库</span>
+                </button>
+
+                <!-- Mode toggle button -->
+                <button class="flex items-center gap-2 cursor-pointer"
+                        style="background: var(--surface-2, #252320); border: none; border-radius: 9999px; padding: 10px 18px; display: flex; align-items: center; gap: 6px;">
+                    <!-- Layout mode icon: stacked lines with arrows -->
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#faf9f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <!-- Two stacked horizontal rectangles suggesting vertical reading mode -->
+                        <rect x="2" y="2" width="12" height="4" rx="0.5"></rect>
+                        <rect x="2" y="10" width="12" height="4" rx="0.5"></rect>
+                        <!-- Small arrow indicators -->
+                        <line x1="13" y1="6.5" x2="13" y2="9.5"></line>
+                        <polyline points="11.5 8 13 9.5 14.5 8"></polyline>
+                    </svg>
+                    <span style="font-family: var(--font-cjk, 'Noto Sans CJK SC', sans-serif); font-size: 13px; font-weight: 500; color: #faf9f5; line-height: 1; white-space: nowrap;">竖向</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ══════════════ BOTTOM PROGRESS BAR ══════════════ -->
+        <div class="absolute left-1/2 z-10"
+             style="bottom: 40px; transform: translateX(-50%);">
+
+            <!-- Capsule container -->
+            <div style="background: var(--surface-2, #252320); border-radius: 9999px; padding: 12px 24px; box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)); min-width: 160px;">
+
+                <!-- Page indicator text -->
+                <div class="text-center" style="margin-bottom: 8px;">
+                    <span style="font-family: var(--font-sans, 'Poppins', sans-serif); font-size: 13px; font-weight: 400; color: var(--text-secondary, #b7b5a9); letter-spacing: 0.5px;">
+                        42 / 256
+                    </span>
+                </div>
+
+                <!-- Progress track -->
+                <div style="width: 100%; height: 2px; background: var(--surface-4, #383530); border-radius: 9999px; overflow: hidden;">
+                    <!-- Progress fill: 42/256 ≈ 16.4% -->
+                    <div class="progress-fill" style="width: 16.4%;"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>

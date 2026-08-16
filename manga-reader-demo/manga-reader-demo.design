@@ -1,0 +1,108 @@
+{
+  "data": [
+    {
+      "id": "page-library",
+      "title": "书库首页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752000000000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/library.html",
+        "interactions": [
+          {
+            "domId": "enter-reader-1",
+            "targetPageId": "page-reader",
+            "transitionLabel": "开始阅读"
+          },
+          {
+            "domId": "enter-reader-2",
+            "targetPageId": "page-reader",
+            "transitionLabel": "开始阅读",
+            "hideEdge": true
+          },
+          {
+            "domId": "enter-reader-3",
+            "targetPageId": "page-reader",
+            "transitionLabel": "开始阅读",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-reader",
+      "title": "阅读器页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752000000000,
+      "canvasData": {
+        "x": 420,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reader.html",
+        "interactions": [
+          {
+            "domId": "back-to-library",
+            "targetPageId": "page-library",
+            "transitionLabel": "返回书库",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "image-001",
+      "title": "封面占位图 1",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752000000000,
+      "canvasData": {
+        "x": 0,
+        "y": 762
+      },
+      "devMetadata": {
+        "imageSrc": "assets/cover-manga-1.jpg"
+      }
+    },
+    {
+      "id": "image-002",
+      "title": "封面占位图 2",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752000000000,
+      "canvasData": {
+        "x": 420,
+        "y": 762
+      },
+      "devMetadata": {
+        "imageSrc": "assets/cover-manga-2.jpg"
+      }
+    },
+    {
+      "id": "image-003",
+      "title": "封面占位图 3",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752000000000,
+      "canvasData": {
+        "x": 840,
+        "y": 762
+      },
+      "devMetadata": {
+        "imageSrc": "assets/cover-manga-3.jpg"
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "mobile",
+    "projectName": "漫画阅读器 UI Demo"
+  }
+}

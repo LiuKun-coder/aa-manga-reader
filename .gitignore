@@ -1,0 +1,30 @@
+# ===== 构建产物与签名凭据（含 keystore/证书，严禁入库）=====
+unpackage/
+*.apk
+*.wgt
+*.keystore
+*.jks
+*.cer
+*.pem
+certdata
+
+# ===== 大体积压缩副本 =====
+*.rar
+*.zip
+*.7z
+
+# ===== 依赖 =====
+node_modules/
+
+# ===== IDE / 系统文件 =====
+.hbuilderx/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ===== Trae 工具产物（保留 .trae/specs 规格文档）=====
+**/.trae/skills/
+__pycache__/
+
+# ===== 日志 =====
+*.log
