@@ -4023,7 +4023,6 @@ function finishSwiperReset() {
 	--glass-bg-clear: rgba(255, 255, 255, 0.05);
 	--glass-border: rgba(255, 255, 255, 0.14);
 	--glass-highlight: rgba(255, 255, 255, 0.10);
-	--glass-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.25);
 	/* ── 功能色 ── */
 	--info-blue: #64A0FF;
 	--success: #8CA06F;
@@ -4967,9 +4966,11 @@ function finishSwiperReset() {
 	box-shadow: 0 4rpx 18rpx rgba(0, 0, 0, 0.35), inset 0 1rpx 0 var(--glass-highlight);
 }
 
-/* 降级：WebView 不支持 backdrop-filter 时，阅读器三个控件回退高不透明纯色，
- * 保证文字在漫画内容上仍可读 */
-@supports not (backdrop-filter: blur(1px)) {
+/* 降级：WebView 完全不支持 backdrop-filter（含 -webkit- 前缀）时，
+ * 阅读器三个控件回退高不透明纯色，保证文字在漫画内容上仍可读。
+ * 条件与正向玻璃规则对称（or -webkit-）：仅支持前缀的老引擎不触发降级，
+ * 走基础规则里的 -webkit-backdrop-filter 正常渲染玻璃 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
 	.back-btn,
 	.reader-mode-toggle,
 	.progress-capsule {
@@ -4980,7 +4981,10 @@ function finishSwiperReset() {
 .progress-text {
 	position: relative;
 	z-index: 1;
-	color: var(--text-secondary);
+	/* clear 玻璃（白膜仅 5%）下方是可变的漫画内容，亮色页面上灰字对比度不足，
+	   页码必须用一级白（同 .back-text）保证任意背景下可读 */
+	color: var(--text-primary);
+	font-weight: 500;
 	font-size: 26rpx;
 	max-width: 80vw;
 	overflow: hidden;
